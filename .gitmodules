@@ -1,0 +1,12 @@
+[submodule "modules/dsp"]
+	path = modules/dsp
+	url = https://github.com/Signalsmith-Audio/dsp.git
+[submodule "modules/hilbert-iir"]
+	path = modules/hilbert-iir
+	url = https://github.com/Signalsmith-Audio/hilbert-iir.git
+[submodule "clap/modules/linear"]
+	path = modules/linear
+	url = https://github.com/Signalsmith-Audio/linear.git
+[submodule "modules/linear"]
+	path = modules/linear
+	url = https://github.com/Signalsmith-Audio/linear.git
