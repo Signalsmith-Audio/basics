@@ -64,7 +64,7 @@ struct AnalyserSTFX : public BaseEffect {
 	template<class Io, class Config, class Block>
 	void processSTFX(Io &io, Config &config, Block &block) {
 		for (size_t c = 0; c < config.outputChannels; ++c) {
-			auto &input = io.input[config.inputChannels];
+			auto &input = io.input[c%config.inputChannels];
 			auto &output = io.output[c];
 			for (size_t i = 0; i < block.length; ++i) {
 				output[i] = input[i];
