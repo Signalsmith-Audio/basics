@@ -241,7 +241,7 @@ private:
 		
 		template<class Storage>
 		void state(Storage &storage) {
-			if (bandsChanged) {
+			if (bandsChanged || storage.extra()) {
 				bandsChanged = false;
 				storage.extra("$type", "Spectrum");
 				storage("hz", hz);
