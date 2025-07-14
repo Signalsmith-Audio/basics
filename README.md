@@ -34,8 +34,6 @@ effect.process(inputBuffers, outputBuffers, blockSize);
 
 When playback (re)starts, you can also call `.reset()` to clear any tails/state.  You can also inspect latency (`effect.latencySamples()`) and tail length (`effect.tailSamples()`). 
 
-The actual implementations are templates (e.g. `LimiterSTFX`) which you shouldn't every need to use directly, although they should be fairly readable.  These are wrapped up into the `...Float` and `...Double` classes by the code in `stfx/stfx-library.h`, which also provides helpers for parameter-smoothing/etc., and more typical `.configure()` and `.process()` functions (from `.configureSTFX()`/`.processSTFX()`). 
-
 ### Parameters
 
 Floating-point parameters are declared as `ParamRange`s in the `...STFX` template.  This is an opaque type which can be assigned from / converted into `double` from any thread.  Parameter smoothing is handled internally.
@@ -48,20 +46,20 @@ The **Analyser** doesn't need any audio outputs (and will simply pass through au
 
 However, since the spectrum data is typically wanted on the main/UI thread, we need to know when it's OK to call the above methods.  This is done using two "meter" methods:
 
-* `.wantsMeters(bool=true)` (thread-safe) - indicates whether meters should be provided
+* `.wantsMeters(bool=true)` (thread-safe) - tells the plugin whether meters should be provided
 * `.hasMeters()` (`const` and thread-safe) - whether the values are ready and safe to read
 
  After any call to `.wantsMeters()`, `.hasMeters()` will immediately return `false`, indicating that no thread should read meter values.  If multiple threads are reading the meters, it is up to *you* to make sure another thread isn't calling `.wantsMeters()` between you checking `.hasMeters()` and using the values.
  
 ### Implementation
 
-The `.state()` method of these templates contain a lot of detail, almost all of which is ignored (and optimised away) when using the `...Float`/`...Double` classes.
+The actual implementations are templates (e.g. `LimiterSTFX`) which you shouldn't every need to use directly, although they should be readable enough to understand the DSP and inspect parameters.  These are wrapped up into the `...Float` and `...Double` classes by the code in `stfx/stfx-library.h`.
 
-The `.configureSTFX()` and `.processSTFX()` methods are wrapped into more typical forms by `stfx/stfx-library.h`.
+The `.state()` method of these templates contain a lot of detail, almost all of which is ignored (and optimised away) when using the `...Float`/`...Double` classes.  The `.configureSTFX()`/`.processSTFX()` methods are also wrapped into more typical `.configure()` and `.process()` functions.
 
 ### Dependencies
 
-Some of the effects use the submodules in `modules/`: DSP library.
+Some of the effects use the submodules in `modules/`: DSP library, Hilbert filter, and `signalsmith-linear` (which provides STFTs and can wrap Accelerate/IPP).
 
 ### License and support
 
