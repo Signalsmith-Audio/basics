@@ -2,8 +2,8 @@
 Released under the Boost Software License (see LICENSE.txt) */
 #pragma once
 
-#include "dsp/delay.h"
-#include "dsp/envelopes.h"
+#include "modules/dsp/delay.h"
+#include "modules/dsp/envelopes.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 1, 0)
 
 #include "stfx/stfx-library.h"

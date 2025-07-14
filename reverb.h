@@ -2,9 +2,9 @@
 Released under the Boost Software License (see LICENSE.txt) */
 #pragma once
 
-#include "dsp/delay.h"
-#include "dsp/mix.h"
-#include "dsp/filters.h"
+#include "modules/dsp/delay.h"
+#include "modules/dsp/mix.h"
+#include "modules/dsp/filters.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 3, 3)
 
 #include "stfx/stfx-library.h"

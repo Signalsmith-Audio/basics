@@ -4,9 +4,9 @@ Released under the Boost Software License (see LICENSE.txt) */
 
 #include "stfx/stfx-library.h"
 
-#include "dsp/curves.h"
-#include "linear/stft.h"
-#include "linear/linear.h"
+#include "modules/dsp/curves.h"
+#include "modules/linear/stft.h"
+#include "modules/linear/linear.h"
 
 #include <vector>
 

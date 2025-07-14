@@ -2,8 +2,8 @@
 See LICENSE.txt and SUPPORT.txt */
 #pragma once
 
-#include "dsp/rates.h"
-#include "dsp/filters.h"
+#include "modules/dsp/rates.h"
+#include "modules/dsp/filters.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 4, 1)
 
 #include "stfx/stfx-library.h"
