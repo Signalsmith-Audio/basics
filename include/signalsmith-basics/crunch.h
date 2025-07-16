@@ -113,8 +113,8 @@ struct CrunchSTFX : public BaseEffect {
 			auto &outputFilter = outputFilters[c];
 			outputFilter.highpass((10 + 40*fuzz)/(config.sampleRate*2)); // more aggressive when fuzz is enabled, since it's very asymmetrical
 
-			oversampler.upChannel(c, io.input[c], int(block.length));
-			Sample *samples = oversampler[c];
+			oversampler.upChannel(int(c), io.input[c], int(block.length));
+			Sample *samples = oversampler[int(c)];
 			for (size_t i = 0; i < block.length*2; ++i) {
 				double hi = i*0.5;
 				Sample x = samples[i]*inputGain.at(hi);
@@ -122,7 +122,7 @@ struct CrunchSTFX : public BaseEffect {
 				Sample y = x*toneFilter(gain);
 				samples[i] = outputFilter(y);
 			}
-			oversampler.downChannel(c, io.output[c], int(block.length));
+			oversampler.downChannel(int(c), io.output[c], int(block.length));
 		}
 	}
 	

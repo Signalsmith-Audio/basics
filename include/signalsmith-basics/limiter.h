@@ -106,7 +106,7 @@ struct LimiterSTFX : public BaseEffect {
 		sampleRate = config.sampleRate;
 		
 		int maxDelaySamples = std::ceil(maxDelayMs*0.001*sampleRate);
-		multiBuffer.resize(channels, maxDelaySamples + 1);
+		multiBuffer.resize(int(channels), maxDelaySamples + 1);
 		channelEnvelopes.resize(channels);
 		for (auto &e : channelEnvelopes) e.configure(maxDelaySamples);
 		channelGains.resize(channels);
@@ -154,18 +154,18 @@ struct LimiterSTFX : public BaseEffect {
 			envelope.releaseSlew = ln2/(releaseSamples + ln2);
 		}
 
-		for (int i = 0; i < block.length; ++i) {
+		for (int i = 0; i < int(block.length); ++i) {
 			Sample minChannelGain = 1;
-			for (int c = 0; c < channels; ++c) {
+			for (size_t c = 0; c < channels; ++c) {
 				Sample value = io.input[c][i]*smoothedPreGain.at(i);
-				multiBuffer[c][i] = value;
+				multiBuffer[int(c)][i] = value;
 				
 				// maximum gain (clips output to threshold)
 				Sample gain = thresholdAmp/std::max(thresholdAmp, std::abs(value));
 				channelGains[c] = gain;
 				minChannelGain = std::min(minChannelGain, gain);
 			}
-			for (int c = 0; c < channels; ++c) {
+			for (size_t c = 0; c < channels; ++c) {
 				Sample gain = channelGains[c];
 				// blend between individual/minimum gain
 				gain += (minChannelGain - gain)*linkChannels;
@@ -184,8 +184,8 @@ struct LimiterSTFX : public BaseEffect {
 				}
 
 				Sample delayed = block.fade(i,
-					multiBuffer[c][i - delaySamplesFrom],
-					multiBuffer[c][i - delaySamplesTo]
+					multiBuffer[int(c)][i - delaySamplesFrom],
+					multiBuffer[int(c)][i - delaySamplesTo]
 				);
 				io.output[c][i] = delayed*gain;
 			}
@@ -194,7 +194,7 @@ struct LimiterSTFX : public BaseEffect {
 	}
 
 private:
-	int channels = 0;
+	size_t channels = 0;
 	double maxDelayMs = 0;
 	Sample sqrtWet = 0, sqrtWetSlew = 1;
 	signalsmith::delay::MultiBuffer<Sample> multiBuffer;
