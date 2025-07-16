@@ -178,20 +178,20 @@ namespace stfx {
 			}
 		public:
 			// Block length in samples
-			int length;
+			const size_t length;
 			
-			Block(int length, double fadeStart, double fadeStep, bool firstBlockAfterReset, bool wantsMeters, bool &metersChecked) : fadeStart(fadeStart), fadeStep(fadeStep), blockFade(1.0/length), firstBlockAfterReset(firstBlockAfterReset), metersRequested(wantsMeters), metersChecked(metersChecked), length(length) {}
+			Block(size_t length, double fadeStart, double fadeStep, bool firstBlockAfterReset, bool wantsMeters, bool &metersChecked) : fadeStart(fadeStart), fadeStep(fadeStep), blockFade(1.0/length), firstBlockAfterReset(firstBlockAfterReset), metersRequested(wantsMeters), metersChecked(metersChecked), length(length) {}
 			// Not copyable, because that's probably a mistake
 			Block(const Block &) = delete;
 			Block & operator =(const Block&) = delete;
 
 			/// Fade ratio at a given sample index
-			double fade(int i) const {
+			double fade(double i) const {
 				return fadeStart + i*fadeStep;
 			}
 			/// Mix two values according to the fade ratio
 			template<class Value=double>
-			Value fade(int i, Value from, Value to) const {
+			Value fade(double i, Value from, Value to) const {
 				return from + (to - from)*fade(i);
 			}
 
@@ -240,14 +240,14 @@ namespace stfx {
 				BlockAutomation(const LinearSegment &smoothed) : LinearSegment(smoothed) {}
 
 				// For this implementation, we just provide a linear segment and no update events.
-				static constexpr int size() {
+				static constexpr size_t size() {
 					return 0;
 				}
 				struct DoNothingEvent {
-					int offset = 0;
+					size_t offset = 0;
 					void operator()() {}
 				};
-				DoNothingEvent operator [](int) {
+				DoNothingEvent operator [](size_t) {
 					return DoNothingEvent();
 				}
 			};
@@ -262,8 +262,8 @@ namespace stfx {
 			/// Blocks can be processed in sub-blocks, which are split up by events.
 			/// This method may return a different sub-block type (which will also have `.split()` and `.forEach()` methods).
 			template<class EventList>
-			const Block & split(EventList &&list, int count) const {
-				for (int i = 0; i < count; ++i) list[i]();
+			const Block & split(EventList &&list, size_t count) const {
+				for (size_t i = 0; i < count; ++i) list[i]();
 				return *this;
 			}
 			template<class EventList, class ...Others>
@@ -450,9 +450,9 @@ namespace stfx {
 
 		struct Config {
 			double sampleRate = 48000;
-			int inputChannels = 2, outputChannels = 2;
-			std::vector<int> auxInputs, auxOutputs;
-			int maxBlockSize = 256;
+			size_t inputChannels = 2, outputChannels = 2;
+			std::vector<size_t> auxInputs, auxOutputs;
+			size_t maxBlockSize = 256;
 			
 			bool operator ==(const Config &other) const {
 				return sampleRate == other.sampleRate
@@ -476,14 +476,14 @@ namespace stfx {
 			return false;
 		}
 		/// Attempts to find a valid configuration by iteration
-		bool configurePersistent(int attempts=10) {
-			for (int i = 0; i < attempts; ++i) {
+		bool configurePersistent(size_t attempts=10) {
+			for (size_t i = 0; i < attempts; ++i) {
 				if (configure()) return true;
 			}
 			return false;
 		}
 		/// Returns true if the effect was successfully configured with _exactly_ these parameters
-		bool configure(double sampleRate, int maxBlockSize, int channels=2, int outputChannels=-1) {
+		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2, size_t outputChannels=-1) {
 			if (outputChannels < 0) outputChannels = channels;
 			config.sampleRate = sampleRate;
 			config.inputChannels = channels;
@@ -508,14 +508,14 @@ namespace stfx {
 		}
 
 		template<class Buffers>
-		void process(Buffers &&buffers, int blockLength) {
+		void process(Buffers &&buffers, size_t blockLength) {
 			process(buffers, buffers, blockLength);
 		}
 
-		/// Wraps the common `process(float** inputs, float** outputs, int length)` call into the `.processSTFX(io, config, block)`.
+		/// Wraps the common `process(float** inputs, float** outputs, size_t length)` call into the `.processSTFX(io, config, block)`.
 		/// It actually accepts any objects which support `inputs[channel][index]`, so you could write adapters for interleaved buffers etc.
 		template<class Inputs, class Outputs>
-		void process(Inputs &&inputs, Outputs &&outputs, int blockLength) {
+		void process(Inputs &&inputs, Outputs &&outputs, size_t blockLength) {
 			// How long should the parameter fade take?
 			double fadeSamples = EffectClass::paramFadeMs()*0.001*config.sampleRate;
 			// Fade position at the end of the block

@@ -91,7 +91,7 @@ struct FreqShifterSTFX : public BaseEffect {
 				// In general, this may alias at the high end when shifting up
 				// but our Hilbert has a 20kHz lowpass, so that's enough
 				// room for our maximum +1000Hz shift
-				Complex y = shiftAfter*hilbert(x*shiftBefore, c);
+				Complex y = shiftAfter*hilbert(x*shiftBefore, int(c));
 				io.output[c][i] = gainDry*x + gainWet*y.real();
 			}
 
