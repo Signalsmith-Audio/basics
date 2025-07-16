@@ -60,7 +60,7 @@ struct FreqShifterSTFX : public BaseEffect {
 		config.auxInputs.resize(0);
 		config.auxOutputs.resize(0);
 		
-		hilbert = {Sample(config.sampleRate), channels};
+		hilbert = {Sample(config.sampleRate), int(channels)};
 	}
 	
 	void reset() {

@@ -190,7 +190,7 @@ struct LimiterSTFX : public BaseEffect {
 				io.output[c][i] = delayed*gain;
 			}
 		}
-		multiBuffer += block.length;
+		multiBuffer += int(block.length);
 	}
 
 private:

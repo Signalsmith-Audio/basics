@@ -68,7 +68,7 @@ struct CrunchSTFX : public BaseEffect {
 		config.auxInputs.resize(0);
 		config.auxOutputs.resize(0);
 		
-		oversampler.resize(channels, config.maxBlockSize, oversampleHalfLatency, std::min(0.45, 21000/config.sampleRate));
+		oversampler.resize(int(channels), int(config.maxBlockSize), oversampleHalfLatency, std::min(0.45, 21000/config.sampleRate));
 		gainshapers.resize(channels);
 		cutFilters.resize(channels);
 		toneFilters.resize(channels);
@@ -103,7 +103,7 @@ struct CrunchSTFX : public BaseEffect {
 		}
 		auto outputGain = block.smooth(outputGainFrom, outputGainTo);
 		
-		for (int c = 0; c < channels; ++c) {
+		for (size_t c = 0; c < channels; ++c) {
 			auto &cutFilter = cutFilters[c];
 			cutFilter.highpass(cutHz/(config.sampleRate*2));
 			auto &gainshaper = gainshapers[c];
@@ -113,21 +113,21 @@ struct CrunchSTFX : public BaseEffect {
 			auto &outputFilter = outputFilters[c];
 			outputFilter.highpass((10 + 40*fuzz)/(config.sampleRate*2)); // more aggressive when fuzz is enabled, since it's very asymmetrical
 
-			oversampler.upChannel(c, io.input[c], block.length);
+			oversampler.upChannel(c, io.input[c], int(block.length));
 			Sample *samples = oversampler[c];
-			for (int i = 0; i < block.length*2; ++i) {
+			for (size_t i = 0; i < block.length*2; ++i) {
 				double hi = i*0.5;
 				Sample x = samples[i]*inputGain.at(hi);
 				Sample gain = gainshaper(cutFilter(x))*outputGain.at(hi);
 				Sample y = x*toneFilter(gain);
 				samples[i] = outputFilter(y);
 			}
-			oversampler.downChannel(c, io.output[c], block.length);
+			oversampler.downChannel(c, io.output[c], int(block.length));
 		}
 	}
 	
 private:
-	int channels = 0;
+	size_t channels = 0;
 	signalsmith::rates::Oversampler2xFIR<Sample> oversampler;
 	struct GainshapeADAA {
 		Sample prevX = 0, prevIntegral = 0;
