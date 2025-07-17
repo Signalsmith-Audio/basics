@@ -1,5 +1,5 @@
 /* Copyright 2025+ Signalsmith Audio Ltd. / Geraint Luff
-See LICENSE.txt and SUPPORT.txt */
+MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
 #include "../../modules/hilbert-iir/hilbert.h"

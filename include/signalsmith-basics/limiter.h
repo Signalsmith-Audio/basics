@@ -1,5 +1,5 @@
 /* Copyright 2022+ Signalsmith Audio Ltd. / Geraint Luff
-Released under the Boost Software License (see LICENSE.txt) */
+MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
 #include "../../modules/dsp/delay.h"
