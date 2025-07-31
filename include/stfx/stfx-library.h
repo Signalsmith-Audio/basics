@@ -106,6 +106,10 @@ namespace stfx {
 		RangeParamIgnore & range(double low, double mid, double high) {
 			return *this;
 		}
+		template<class V2C, class C2V>
+		RangeParamIgnore & range(double pLow, double pHigh, V2C &&valueToControl, C2V &&controlToValue) {
+			return *this;
+		}
 		/* Always takes a suffix.  Units registered first are preferred when formatting values
 		Optional arguments (any can be omitted if the order is correct):
 			precision:

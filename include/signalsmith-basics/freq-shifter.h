@@ -23,15 +23,8 @@ struct FreqShifterSTFX : public BaseEffect {
 	using typename BaseEffect::ParamRange;
 	using typename BaseEffect::ParamStepped;
 	
-	static double unitToShiftHz(double x) {
-		return 100*x/(1.1 - x*x);
-	}
-	static double shiftHzToUnit(double y) {
-		return (std::sqrt(2500 + 1.1*y*y) - 50)/y;
-	}
-
 	ParamRange mix{1};
-	ParamRange shift{shiftHzToUnit(50)};
+	ParamRange shiftHz{50};
 	ParamStepped reflect{0};
 
 	template<class Storage>
@@ -43,11 +36,20 @@ struct FreqShifterSTFX : public BaseEffect {
 		stfx::units::rangePercent(storage.range("mix", mix)
 			.info("mix", "wet/dry")
 			.range(0, 0.5, 1));
-		storage.range("shift", shift)
+
+		// convert to/from a friendly [-1, 1] control space
+		auto shiftHzToControl = [](double y) {
+			return (std::sqrt(2500 + 1.1*y*y) - 50)/y;
+		};
+		auto controlToShiftHz = [](double x) {
+			return 100*x/(1.1 - x*x);
+		};
+		storage.range("shiftHz", shiftHz)
 			.info("shift", "pre-distortion input gain")
-			.range(-1, 0, 1)
-			.unit("Hz", 1, shiftHzToUnit, unitToShiftHz, shiftHzToUnit(-9.99), shiftHzToUnit(9.99))
-			.unit("Hz", 0, shiftHzToUnit, unitToShiftHz);
+			.range(-1000, 1000, shiftHzToControl, controlToShiftHz)
+			.unit("Hz", 1, -9.99, 9.99)
+			.unit("Hz", 0);
+
 		storage.stepped("reflect", reflect)
 			.info("reflect", "0Hz reflection mode")
 			.range(0, 3)
@@ -69,19 +71,18 @@ struct FreqShifterSTFX : public BaseEffect {
 		hilbert.reset();
 	}
 	
-	
 	template <class Io, class Config, class Block>
 	void processSTFX(Io &io, Config &config, Block &block) {
+		// Smooth these values out to avoid clicks, but put them through a mapping function first
 		auto dry = block.smooth(mix, [](double m){return 1 - m*m;});
 		auto wet = block.smooth(mix, [](double m){return m*(2 - m);});
-		
-		auto phaseStep = block.smooth(shift, [&](double u){
-			auto hz = unitToShiftHz(u);
+
+		auto phaseStep = block.smooth(shiftHz, [&](double hz){
 			return hz/config.sampleRate;
 		});
 		
 		int mode = reflect;
-		bool noReflectDown = (mode == 0 || mode == 2);
+		bool reflectDown = (mode == 1 || mode == 3);
 		bool duplicateUp = (mode == 2 || mode == 3);
 		
 		for (size_t i = 0; i < block.length; ++i) {
@@ -96,7 +97,7 @@ struct FreqShifterSTFX : public BaseEffect {
 			}
 
 			auto ps = phaseStep.at(i);
-			bool shiftInput = (ps < 0) ? noReflectDown : duplicateUp;
+			bool shiftInput = (ps < 0) ? !reflectDown : duplicateUp;
 			if (shiftInput) {
 				shiftPhaseBefore += ps;
 				shiftBefore = std::polar(Sample(1), shiftPhaseBefore*Sample(2*M_PI));
