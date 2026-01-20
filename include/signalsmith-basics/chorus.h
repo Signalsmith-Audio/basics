@@ -4,7 +4,7 @@ MIT License - see LICENSE.txt and SUPPORT.txt */
 
 #include "../stfx/stfx-library.h"
 
-#include "../../modules/dsp/delay.h"
+#include "signalsmith-dsp/delay.h"
 
 #include <vector>
 

@@ -4,9 +4,9 @@ MIT License - see LICENSE.txt and SUPPORT.txt */
 
 #include "../stfx/stfx-library.h"
 
-#include "../../modules/dsp/curves.h"
-#include "../../modules/linear/stft.h"
-#include "../../modules/linear/linear.h"
+#include "signalsmith-dsp/curves.h"
+#include "signalsmith-linear/stft.h"
+#include "signalsmith-linear/linear.h"
 
 #include <vector>
 

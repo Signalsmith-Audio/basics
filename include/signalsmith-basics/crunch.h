@@ -2,8 +2,8 @@
 MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
-#include "../../modules/dsp/rates.h"
-#include "../../modules/dsp/filters.h"
+#include "signalsmith-dsp/rates.h"
+#include "signalsmith-dsp/filters.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 4, 1)
 
 #include "../stfx/stfx-library.h"
