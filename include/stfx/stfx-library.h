@@ -368,7 +368,7 @@ namespace stfx {
 
 		// passes ownership of any meter values back to the audio thread
 		void wantsMeters(bool meters=true) {
-			metersReady.clear();
+			metersReady = false;
 			if (meters) {
 				metersRequested.test_and_set();
 			} else {
@@ -377,10 +377,11 @@ namespace stfx {
 		}
 		// whether the meter values can be read
 		bool hasMeters() const {
-			return metersReady.test();
+			return metersReady;
 		}
 	protected:
-		std::atomic_flag metersRequested = ATOMIC_FLAG_INIT, metersReady = ATOMIC_FLAG_INIT;
+		std::atomic_flag metersRequested = ATOMIC_FLAG_INIT;
+		std::atomic<bool> metersReady = false;
 	};
 
 	/// Creates an effect class from an effect template, with optional extra config.
@@ -563,7 +564,7 @@ namespace stfx {
 			// Meters are filled - pass ownership of meter values to the main thread
 			if (this->metersRequested.test() && metersChecked) {
 				this->metersRequested.clear();
-				this->metersReady.test_and_set();
+				this->metersReady = true;
 			}
 		}
 	};
