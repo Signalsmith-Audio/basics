@@ -2,7 +2,7 @@
 MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
-#include "../../modules/hilbert-iir/hilbert.h"
+#include "signalsmith-hilbert/hilbert.h"
 
 #include "../stfx/stfx-library.h"
 

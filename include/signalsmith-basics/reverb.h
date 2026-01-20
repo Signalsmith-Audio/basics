@@ -2,9 +2,9 @@
 MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
-#include "../../modules/dsp/delay.h"
-#include "../../modules/dsp/mix.h"
-#include "../../modules/dsp/filters.h"
+#include "signalsmith-dsp/delay.h"
+#include "signalsmith-dsp/mix.h"
+#include "signalsmith-dsp/filters.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 3, 3)
 
 #include "../stfx/stfx-library.h"

@@ -2,8 +2,8 @@
 MIT License - see LICENSE.txt and SUPPORT.txt */
 #pragma once
 
-#include "../../modules/dsp/delay.h"
-#include "../../modules/dsp/envelopes.h"
+#include "signalsmith-dsp/delay.h"
+#include "signalsmith-dsp/envelopes.h"
 SIGNALSMITH_DSP_VERSION_CHECK(1, 1, 0)
 
 #include "../stfx/stfx-library.h"
