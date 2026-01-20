@@ -369,19 +369,14 @@ namespace stfx {
 		// passes ownership of any meter values back to the audio thread
 		void wantsMeters(bool meters=true) {
 			metersReady = false;
-			if (meters) {
-				metersRequested.test_and_set();
-			} else {
-				metersRequested.clear();
-			}
+			metersRequested = meters;
 		}
 		// whether the meter values can be read
 		bool hasMeters() const {
 			return metersReady;
 		}
 	protected:
-		std::atomic_flag metersRequested = ATOMIC_FLAG_INIT;
-		std::atomic<bool> metersReady = false;
+		std::atomic<bool> metersRequested = false, metersReady = false;
 	};
 
 	/// Creates an effect class from an effect template, with optional extra config.
@@ -547,7 +542,7 @@ namespace stfx {
 			};
 			Io io{inputs, outputs};
 			bool metersChecked = false;
-			Block block(blockLength, fadeRatio, fadeRatioStep, justHadReset, this->metersRequested.test(), metersChecked);
+			Block block(blockLength, fadeRatio, fadeRatioStep, justHadReset, this->metersRequested, metersChecked);
 			
 			((EffectClass *)this)->processSTFX(io, (const Config &)config, (const Block &)block);
 
@@ -562,8 +557,8 @@ namespace stfx {
 			for (auto param : params.stepParams) param->_libEndBlock();
 			
 			// Meters are filled - pass ownership of meter values to the main thread
-			if (this->metersRequested.test() && metersChecked) {
-				this->metersRequested.clear();
+			if (this->metersRequested && metersChecked) {
+				this->metersRequested = false;
 				this->metersReady = true;
 			}
 		}
