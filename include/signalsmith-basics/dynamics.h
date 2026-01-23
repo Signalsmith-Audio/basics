@@ -31,7 +31,7 @@ struct DynamicsSTFX : public BaseEffect {
 		ParamRange limitDb{-20};
 		ParamRange invRatio{0.5}; // 0.5 = 2:1 compression
 		ParamStepped autoGain{1};
-		ParamRange makeUpGain{0}; // in addition to auto-gain
+		ParamRange makeupDb{0}; // in addition to auto-gain
 
 		template<class Storage>
 		void state(Storage &storage) {
@@ -49,7 +49,7 @@ struct DynamicsSTFX : public BaseEffect {
 			storage.stepped("autoGain", autoGain)
 				.info("auto-gain", "gain compensation")
 				.label(0, "off", "on");
-			storage.range("makeUpGain", makeUpGain)
+			storage.range("makeupDb", makeupDb)
 				.info("make-up", "additional make-up gain")
 				.range(0, 6, 20)
 				.unit("dB", 1).exact(0, "off");
@@ -113,7 +113,7 @@ struct DynamicsSTFX : public BaseEffect {
 				.range(0, 5, maxLookaheadMs));
 			stfx::units::rangeMs(storage.range("attackMs", attackMs)
 				.info("attack", "reaction time to increased volume")
-				.range(0, 20, 50));
+				.range(1, 20, 50));
 			stfx::units::rangeMs(storage.range("releaseMs", releaseMs)
 				.info("release", "reaction time to decrease volume")
 				.range(20, 100, 250));
@@ -178,7 +178,7 @@ struct DynamicsSTFX : public BaseEffect {
 	}
 	
 	double mapDb(double inDb, bool gateOpen=true) const {
-		double outDb = inDb;
+		double outDb = inDb + compressor.makeupDb;
 		if (inDb > compressor.limitDb) {
 			outDb += (inDb - compressor.limitDb)*(compressor.invRatio - 1);
 		}
@@ -289,18 +289,18 @@ private:
 		}
 		
 		struct Result {
-			Sample energy, period, slew;
+			Sample energy, slew;
 		};
 		
 		Result operator()(Sample energy) {
 			Sample ratio = energy/(e2 + Sample(1e-30));
 			Sample period = attackSamples*std::exp(-ratio);
 			Sample slew = 1/(period + 1);
-			
+
 			e1 = std::max<Sample>(e1*releaseDecay, e1 + (energy - e1)*slew);
 			e2 = std::max<Sample>(e2*releaseDecay, e2 + (e1 - e2)*slew);
 
-			return {e2, period, slew};
+			return {e2, slew};
 		}
 	private:
 		Sample attackSamples = 1;
