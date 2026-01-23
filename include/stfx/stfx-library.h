@@ -584,8 +584,10 @@ namespace stfx {
 			return false;
 		}
 		/// Returns true if the effect was successfully configured with _exactly_ these parameters
-		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2, size_t outputChannels=-1, size_t auxInChannels=0, size_t auxOutChannels=0) {
-			if (outputChannels < 0) outputChannels = channels;
+		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2) {
+			return configure(sampleRate, maxBlockSize, channels, channels);
+		}
+		bool configure(double sampleRate, size_t maxBlockSize, size_t channels, size_t outputChannels, size_t auxInChannels=0, size_t auxOutChannels=0) {
 			config.sampleRate = sampleRate;
 			config.inputChannels = channels;
 			config.outputChannels = outputChannels;
