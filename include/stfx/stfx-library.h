@@ -379,6 +379,22 @@ namespace stfx {
 		std::atomic<bool> metersRequested = false, metersReady = false;
 	};
 
+	struct LibraryConfig {
+		double sampleRate = 48000;
+		size_t inputChannels = 2, outputChannels = 2;
+		std::vector<size_t> auxInputs, auxOutputs;
+		size_t maxBlockSize = 256;
+		
+		bool operator ==(const LibraryConfig &other) const {
+			return sampleRate == other.sampleRate
+				&& inputChannels == other.inputChannels
+				&& outputChannels == other.outputChannels
+				&& auxInputs == other.auxInputs
+				&& auxOutputs == other.auxOutputs
+				&& maxBlockSize == other.maxBlockSize;
+		}
+	};
+
 	/// Creates an effect class from an effect template, with optional extra config.
 	/// The effect template takes `EffectTemplate<BaseClass, ...ExtraConfig>`
 	template<typename Sample, template <class, class...> class EffectTemplate, class ...ExtraConfig>
@@ -410,7 +426,8 @@ namespace stfx {
 			int version(int v) {return v;}
 			// Ignore the UI/synchronisation stuff
 			bool extra() {return false;}
-			bool extra(const char *, const char *) {return false;}
+			template<class V>
+			void extra(const char *, V &&) {}
 			void invalidate(const char *) {}
 			// This storage only reads values, never changes them
 			template<class T>
@@ -448,21 +465,7 @@ namespace stfx {
 			EffectClass::state(params);
 		}
 
-		struct Config {
-			double sampleRate = 48000;
-			size_t inputChannels = 2, outputChannels = 2;
-			std::vector<size_t> auxInputs, auxOutputs;
-			size_t maxBlockSize = 256;
-			
-			bool operator ==(const Config &other) const {
-				return sampleRate == other.sampleRate
-					&& inputChannels == other.inputChannels
-					&& outputChannels == other.outputChannels
-					&& auxInputs == other.auxInputs
-					&& auxOutputs == other.auxOutputs
-					&& maxBlockSize == other.maxBlockSize;
-			}
-		};
+		using Config = LibraryConfig;
 		/// The current (proposed) effect configuration
 		Config config;
 		/// Returns `true` if the current `.config` was accepted.  Otherwise, you can check how `.config` was modified, make your own adjustments (if needed) and try again.
