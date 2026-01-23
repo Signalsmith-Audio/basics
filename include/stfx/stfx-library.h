@@ -458,6 +458,30 @@ namespace stfx {
 		bool justHadReset = true;
 		// Keep track of the A/B fade state
 		double fadeRatio = 0;
+		
+		std::vector<size_t> auxInputOffsets, auxOutputOffsets;
+		template<class Main>
+		class Aux {
+			Main &main;
+			const size_t *offsets;
+		public:
+			Aux(Main &main, const size_t *offsets) : main(main), offsets(offsets) {}
+			
+			class Bus {
+				Main &main;
+				size_t offset;
+			public:
+				Bus(Main &main, size_t offset) : main(main), offset(offset) {}
+				
+				auto operator[](size_t c) -> decltype(this->main[c + this->offset]) {
+					return main[c + offset];
+				}
+			};
+			
+			Bus operator[](int c) const {
+				return Bus{main, offsets[c]};
+			}
+		};
 	public:
 		template<class ...Args>
 		LibraryEffect(Args &&...args) : EffectClass(std::forward<Args>(args)...) {
@@ -474,6 +498,17 @@ namespace stfx {
 			EffectClass::configureSTFX(config);
 			if (config == prevConfig) {
 				reset();
+				auxInputOffsets.resize(0);
+				size_t offset = config.inputChannels;
+				for (auto &aux : config.auxInputs) {
+					auxInputOffsets.push_back(offset);
+					offset += aux;
+				}
+				offset = config.outputChannels;
+				for (auto &aux : config.auxOutputs) {
+					auxOutputOffsets.push_back(offset);
+					offset += aux;
+				}
 				return true;
 			}
 			return false;
@@ -489,12 +524,17 @@ namespace stfx {
 		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2) {
 			return configure(sampleRate, maxBlockSize, channels, channels);
 		}
-		bool configure(double sampleRate, size_t maxBlockSize, size_t channels, size_t outputChannels) {
+		bool configure(double sampleRate, size_t maxBlockSize, size_t channels, size_t outputChannels, size_t auxInChannels=0, size_t auxOutChannels=0) {
 			config.sampleRate = sampleRate;
 			config.inputChannels = channels;
 			config.outputChannels = outputChannels;
 			config.maxBlockSize = maxBlockSize;
-			
+
+			config.auxInputs.resize(0);
+			if (auxInChannels > 0) config.auxInputs.push_back(auxInChannels);
+			config.auxOutputs.resize(0);
+			if (auxOutChannels > 0) config.auxOutputs.push_back(auxOutChannels);
+
 			return configure();
 		}
 		
@@ -544,8 +584,10 @@ namespace stfx {
 			struct Io {
 				Inputs input;
 				Outputs output;
+				Aux<Inputs> auxInput;
+				Aux<Outputs> auxOutput;
 			};
-			Io io{inputs, outputs};
+			Io io{inputs, outputs, {inputs, auxInputOffsets.data()}, {outputs, auxOutputOffsets.data()}};
 			bool metersChecked = false;
 			Block block(blockLength, fadeRatio, fadeRatioStep, justHadReset, this->metersRequested, metersChecked);
 			
