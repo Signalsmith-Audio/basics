@@ -20,7 +20,7 @@ if(NOT TARGET signalsmith-dsp)
 	FetchContent_Declare(
 		signalsmith-dsp
 		GIT_REPOSITORY https://github.com/Signalsmith-Audio/dsp.git
-		GIT_TAG v1.7.0
+		GIT_TAG v1.7.1
 		GIT_SHALLOW ON
 	)
 	FetchContent_MakeAvailable(signalsmith-dsp)
