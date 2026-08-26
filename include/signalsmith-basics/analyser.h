@@ -50,7 +50,7 @@ struct AnalyserSTFX : public BaseEffect {
 		channels = config.inputChannels;
 		config.auxInputs = config.auxOutputs = {};
 
-		stft.configure(channels, 0, stftBlockMs*0.001*sampleRate, stftIntervalMs*0.001*sampleRate);
+		stft.configure(channels, 0, stftBlockMs*0.001*sampleRate, 0, stftIntervalMs*0.001*sampleRate);
 		subRate = sampleRate/stft.defaultInterval();
 		bands = spectrum.resize(channels, barkResolution, sampleRate, stft.blockSamples());
 		updateBands();

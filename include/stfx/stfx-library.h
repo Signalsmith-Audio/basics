@@ -15,6 +15,11 @@
 #include <cmath>
 #include <atomic>
 
+#if defined(__SSE__) || defined(_M_X64)
+#	define STFX_USE_XMMINTRIN_STOPDENORMALS
+#	include <xmmintrin.h>
+#endif
+
 namespace stfx {
 	// Convenient units for range parameters - not really part of the main STFX API
 	namespace units {
@@ -343,6 +348,39 @@ namespace stfx {
 		};
 	}
 
+#if defined(STFX_USE_XMMINTRIN_STOPDENORMALS)
+		class StopDenormals {
+			unsigned int controlStatusRegister;
+		public:
+			StopDenormals() : controlStatusRegister(_mm_getcsr()) {
+				_mm_setcsr(controlStatusRegister|0x8040); // Flush-to-Zero and Denormals-Are-Zero
+			}
+			~StopDenormals() {
+				_mm_setcsr(controlStatusRegister);
+			}
+		};
+#elif (defined (__ARM_NEON) || defined (__ARM_NEON__))
+		class StopDenormals {
+			uintptr_t status;
+		public:
+			StopDenormals() {
+				uintptr_t asmStatus;
+				asm volatile("mrs %0, fpcr" : "=r"(asmStatus));
+				status = asmStatus = asmStatus|0x01000000U; // Flush to Zero
+				asm volatile("msr fpcr, %0" : : "ri"(asmStatus));
+			}
+			~StopDenormals() {
+				uintptr_t asmStatus = status;
+				asm volatile("msr fpcr, %0" : : "ri"(asmStatus));
+			}
+		};
+#else
+#	if __cplusplus >= 202302L
+# 		warning "The `StopDenormals` class doesn't do anything for this architecture"
+#	endif
+		class StopDenormals {}; // FIXME: add for other architectures
+#endif
+
 	/// Base class for our effect to inherit from.   Provides parameter classes and some default config.
 	template<typename SampleType>
 	class LibraryEffectBase {
@@ -362,6 +400,31 @@ namespace stfx {
 		int tailSamples() {
 			return 0;
 		}
+
+		size_t polyphony() {
+			return 0;
+		}
+		// Call these note-event methods before `.process()` to load up events for a block
+		// Assume 69 = 440Hz. if you want a different tuning base, then add an appropriate offset.
+		bool noteStart(size_t blockOffset, size_t noteId, Sample pitch, Sample velocity) {
+			return false;
+		}
+		bool noteStop(size_t blockOffset, size_t noteId, Sample velocity=0) {
+			return false;
+		}
+		// Is the current note ID still active?
+		bool noteCheck(size_t noteId) {
+			return false;
+		}
+		// This is an updated MIDI note, *not* pitch-bend
+		bool notePitch(size_t blockOffset, size_t noteId, Sample pitch) {
+			return false;
+		}
+		// use MIDI-CC numbers for note expression
+		// volume=7, pan=10, vibrato=21, expression=11, brightness=74, pressure=2
+		bool noteCC(size_t blockOffset, size_t noteId, size_t midiCC, Sample value) {
+			return false;
+		}
 		
 		template<class Presets>
 		void presets(Presets &) {}
@@ -377,6 +440,22 @@ namespace stfx {
 		}
 	protected:
 		std::atomic<bool> metersRequested = false, metersReady = false;
+	};
+
+	struct LibraryConfig {
+		double sampleRate = 48000;
+		size_t inputChannels = 2, outputChannels = 2;
+		std::vector<size_t> auxInputs, auxOutputs;
+		size_t maxBlockSize = 256;
+		
+		bool operator ==(const LibraryConfig &other) const {
+			return sampleRate == other.sampleRate
+				&& inputChannels == other.inputChannels
+				&& outputChannels == other.outputChannels
+				&& auxInputs == other.auxInputs
+				&& auxOutputs == other.auxOutputs
+				&& maxBlockSize == other.maxBlockSize;
+		}
 	};
 
 	/// Creates an effect class from an effect template, with optional extra config.
@@ -410,7 +489,8 @@ namespace stfx {
 			int version(int v) {return v;}
 			// Ignore the UI/synchronisation stuff
 			bool extra() {return false;}
-			bool extra(const char *, const char *) {return false;}
+			template<class V>
+			void extra(const char *, V &&) {}
 			void invalidate(const char *) {}
 			// This storage only reads values, never changes them
 			template<class T>
@@ -441,6 +521,30 @@ namespace stfx {
 		bool justHadReset = true;
 		// Keep track of the A/B fade state
 		double fadeRatio = 0;
+		
+		std::vector<size_t> auxInputOffsets, auxOutputOffsets;
+		template<class Main>
+		class Aux {
+			Main &main;
+			const size_t *offsets;
+		public:
+			Aux(Main &main, const size_t *offsets) : main(main), offsets(offsets) {}
+			
+			class Bus {
+				Main &main;
+				size_t offset;
+			public:
+				Bus(Main &main, size_t offset) : main(main), offset(offset) {}
+				
+				auto operator[](size_t c) -> decltype(this->main[c + this->offset]) {
+					return main[c + offset];
+				}
+			};
+			
+			Bus operator[](int c) const {
+				return Bus{main, offsets[c]};
+			}
+		};
 	public:
 		template<class ...Args>
 		LibraryEffect(Args &&...args) : EffectClass(std::forward<Args>(args)...) {
@@ -448,21 +552,7 @@ namespace stfx {
 			EffectClass::state(params);
 		}
 
-		struct Config {
-			double sampleRate = 48000;
-			size_t inputChannels = 2, outputChannels = 2;
-			std::vector<size_t> auxInputs, auxOutputs;
-			size_t maxBlockSize = 256;
-			
-			bool operator ==(const Config &other) const {
-				return sampleRate == other.sampleRate
-					&& inputChannels == other.inputChannels
-					&& outputChannels == other.outputChannels
-					&& auxInputs == other.auxInputs
-					&& auxOutputs == other.auxOutputs
-					&& maxBlockSize == other.maxBlockSize;
-			}
-		};
+		using Config = LibraryConfig;
 		/// The current (proposed) effect configuration
 		Config config;
 		/// Returns `true` if the current `.config` was accepted.  Otherwise, you can check how `.config` was modified, make your own adjustments (if needed) and try again.
@@ -471,6 +561,17 @@ namespace stfx {
 			EffectClass::configureSTFX(config);
 			if (config == prevConfig) {
 				reset();
+				auxInputOffsets.resize(0);
+				size_t offset = config.inputChannels;
+				for (auto &aux : config.auxInputs) {
+					auxInputOffsets.push_back(offset);
+					offset += aux;
+				}
+				offset = config.outputChannels;
+				for (auto &aux : config.auxOutputs) {
+					auxOutputOffsets.push_back(offset);
+					offset += aux;
+				}
 				return true;
 			}
 			return false;
@@ -483,15 +584,18 @@ namespace stfx {
 			return false;
 		}
 		/// Returns true if the effect was successfully configured with _exactly_ these parameters
-		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2) {
-			return configure(sampleRate, maxBlockSize, channels, channels);
-		}
-		bool configure(double sampleRate, size_t maxBlockSize, size_t channels, size_t outputChannels) {
+		bool configure(double sampleRate, size_t maxBlockSize, size_t channels=2, size_t outputChannels=-1, size_t auxInChannels=0, size_t auxOutChannels=0) {
+			if (outputChannels < 0) outputChannels = channels;
 			config.sampleRate = sampleRate;
 			config.inputChannels = channels;
 			config.outputChannels = outputChannels;
 			config.maxBlockSize = maxBlockSize;
-			
+
+			config.auxInputs.resize(0);
+			if (auxInChannels > 0) config.auxInputs.push_back(auxInChannels);
+			config.auxOutputs.resize(0);
+			if (auxOutChannels > 0) config.auxOutputs.push_back(auxOutChannels);
+
 			return configure();
 		}
 		
@@ -518,6 +622,7 @@ namespace stfx {
 		/// It actually accepts any objects which support `inputs[channel][index]`, so you could write adapters for interleaved buffers etc.
 		template<class Inputs, class Outputs>
 		void process(Inputs &&inputs, Outputs &&outputs, size_t blockLength) {
+			StopDenormals scoped;
 			// How long should the parameter fade take?
 			double fadeSamples = EffectClass::paramFadeMs()*0.001*config.sampleRate;
 			// Fade position at the end of the block
@@ -541,8 +646,10 @@ namespace stfx {
 			struct Io {
 				Inputs input;
 				Outputs output;
+				Aux<Inputs> auxInput;
+				Aux<Outputs> auxOutput;
 			};
-			Io io{inputs, outputs};
+			Io io{inputs, outputs, {inputs, auxInputOffsets.data()}, {outputs, auxOutputOffsets.data()}};
 			bool metersChecked = false;
 			Block block(blockLength, fadeRatio, fadeRatioStep, justHadReset, this->metersRequested, metersChecked);
 			
