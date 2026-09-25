@@ -5,7 +5,8 @@ A collection of basic effects, available as plugins and re-usable open-source (M
 * **Analyser**
 * **Chorus**
 * **Crunch**
-* **FreqShifter**
+* **Dynamics** (compressor/expander/gate)
+* **Frequency Shifter**
 * **Limiter**
 * **Reverb**
 
