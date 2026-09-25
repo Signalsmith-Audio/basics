@@ -59,7 +59,11 @@ The `.state()` method of these templates contain a lot of detail, almost all of 
 
 ### Dependencies
 
-Some of the effects use the submodules in `modules/`: DSP library, Hilbert filter, and `signalsmith-linear` (which provides STFTs and can wrap Accelerate/IPP).
+The effects depend on our [DSP library](https://github.com/Signalsmith-Audio/dsp), [Hilbert filter](https://github.com/Signalsmith-Audio/hilbert-iir) and [Linear](https://github.com/Signalsmith-Audio/linear) (which provides STFTs and can wrap Accelerate/IPP).
+
+If using CMake, these are pulled in automatically (using `FetchContent`), but only if the corresponding targets aren't defined.  If you already have these in your project (or want to use specific versions of them) then include them before Basics.
+
+For any other build system, just make sure the `include/` directory of each project is in the include path.
 
 ### License and support
 
