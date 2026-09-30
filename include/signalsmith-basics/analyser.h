@@ -38,10 +38,11 @@ struct AnalyserSTFX : public BaseEffect {
 			.info("res.", "in Bark scale")
 			.range(2, 10, 25)
 			.unit("", 0);
+	}
 		
-		if (storage.extra()) {
-			storage("spectrum", spectrum);
-		}
+	template<class Storage>
+	void uiState(Storage &storage) {
+		storage("spectrum", spectrum);
 	}
 
 	template<class Config>
@@ -241,12 +242,15 @@ private:
 		
 		template<class Storage>
 		void state(Storage &storage) {
-			if (bandsChanged || storage.extra()) {
-				bandsChanged = false;
-				storage.extra("$type", "Spectrum");
-				storage("hz", hz);
-			}
+			if (bandsChanged) uiState(storage);
 			storage("energy", energy);
+		}
+
+		template<class Storage>
+		void uiState(Storage &storage) {
+			bandsChanged = false;
+			storage.extra("$type", "Spectrum");
+			storage("hz", hz);
 		}
 	} spectrum;
 };
